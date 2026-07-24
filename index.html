@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Privado - Generador de PDF</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f7f6; }
+        .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        label { font-weight: bold; display: block; margin-top: 15px; color: #444; }
+        input, select, button { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #0056b3; }
+        .oculto { display: none; }
+        #contenedor-pdf { padding: 30px; border: 1px solid #e0e0e0; background: #fff; margin-top: 25px; line-height: 1.6; }
+        .alerta-info { background-color: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 4px; border: 1px solid #bee5eb; margin-top: 15px; font-weight: bold; }
+        .link-cambio { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<!-- PANTALLA A: REGISTRO -->
+<div id="pantalla-registro" class="card">
+    <div class="alerta-info">
+        💰 Pago recibido. Registrate con tu mail y contraseña para que el administrador active tu cuenta.
+    </div>
+    <h2>Crea tu Cuenta de Acceso</h2>
+    
+    <label for="reg-email">Correo Electrónico:</label>
+    <input type="email" id="reg-email" placeholder="ejemplo@correo.com">
+
+    <label for="reg-password">Contraseña (Mínimo 6 caracteres):</label>
+    <input type="password" id="reg-password" placeholder="******">
+
+    <button onclick="registrarUsuario()" style="margin-top: 20px; background-color: #28a745;">Registrarse de verdad</button>
+    <div class="link-cambio" onclick="mostrarPantalla('login')">¿Ya estás registrado? Inicia sesión acá</div>
+</div>
+
+<!-- PANTALLA B: INICIAR SESIÓN -->
+<div id="pantalla-login" class="card oculto">
+    <h2>Ingreso de Usuarios Activos</h2>
+    <p>Colocá tus datos para entrar al generador de documentos.</p>
+    
+    <label for="log-email">Correo Electrónico:</label>
+    <input type="email" id="log-email" placeholder="ejemplo@correo.com">
+
+    <label for="log-password">Contraseña:</label>
+    <input type="password" id="log-password" placeholder="******">
+
+    <button onclick="iniciarSesion()" style="margin-top: 20px;">Iniciar Sesión Diario</button>
+    <div class="link-cambio" onclick="mostrarPantalla('registro')">¿Sos un cliente nuevo? Registrate acá</div>
+</div>
+
+<!-- PANTALLA C: ESPERA -->
+<div id="pantalla-pendiente" class="card oculto">
+    <h2>Cuenta en Verificación</h2>
+    <div class="alerta-info" style="background-color: #fff3cd; color: #856404; border-color: #ffeeba;">
+        ⏳ Tu cuenta está siendo verificada de forma segura. Te avisaremos cuando el administrador cambie tu estado a "aprobado" en el panel.
+    </div>
+    <button onclick="cerrarSesion()" style="background-color: #dc3545; margin-top: 20px;">Volver al Inicio</button>
+</div>
+
+<!-- PANTALLA D: FORMULARIO Y PDF -->
+<div id="pantalla-privada" class="card oculto">
+    <h2>¡Bienvenido! Configura tu Documento</h2>
+    <p><button onclick="cerrarSesion()" style="background-color: #dc3545; padding: 5px 10px; width: auto; font-size: 12px; float: right;">Cerrar Sesión</button></p>
+    <div style="clear: both;"></div>
+
+    <label for="nombre">Nombre Completo del Cliente:</label>
+    <input type="text" id="nombre" placeholder="Ej. Juan Pérez" oninput="actualizarTexto()">
+
+    <label for="dni">DNI / Identificación:</label>
+    <input type="text" id="dni" placeholder="Ej. 12345678X" oninput="actualizarTexto()">
+
+    <label for="opciones">Tipo de Documento:</label>
+    <select id="opciones" onchange="actualizarTexto()">
+        <option value="comercial">Contrato Comercial Estándar</option>
+        <option value="alquiler">Acuerdo de Alquiler Residencial</option>
+    </select>
+
+    <div id="contenedor-pdf">
+        <h3 id="titulo-documento">Contrato Comercial Estándar</h3>
+        <p id="cuerpo-documento">Cargando...</p>
+    </div>
+
+    <button onclick="descargarPDF()" style="background-color: #28a745; margin-top: 20px;">Descargar PDF Personalizado</button>
+</div>
+
+<!-- MOTOR DE CONEXIÓN PROPIO (CERO ENLACES EXTERNOS) -->
+<script>
+    // ⚠️ COLOCÁ TUS DATOS DE SUPABASE AQUÍ
+    const SUPABASE_URL = "https://ojcabywacdwismsyvgpl.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qY2FieXdhY2R3aXNtc3l2Z3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4Mjg1MjgsImV4cCI6MjA5ODQwNDUyOH0.SWnzjmVlSu11V-DLtpnA5ajMigzVLGh0P1NF7aA0rHk";
+
+    function mostrarPantalla(fase) {
+        document.getElementById("pantalla-registro").classList.add("oculto");
+        document.getElementById("pantalla-login").classList.add("oculto");
+        document.getElementById("pantalla-pendiente").classList.add("oculto");
+        document.getElementById("pantalla-privada").classList.add("oculto");
+
+        if (fase === 'registro') document.getElementById("pantalla-registro").classList.remove("oculto");
+        if (fase === 'login') document.getElementById("pantalla-login").classList.remove("oculto");
+        if (fase === 'pendiente') document.getElementById("pantalla-pendiente").classList.remove("oculto");
+        if (fase === 'privada') document.getElementById("pantalla-privada").classList.remove("oculto");
+    }
+
+    // REGISTRO MEDIANTE SISTEMA NATIVO DEL NAVEGADOR
+    async function registrarUsuario() {
+        const email = document.getElementById("reg-email").value;
+        const password = document.getElementById("reg-password").value;
+        if(!email || !password) return alert("Por favor completa los campos.");
+
+        try {
+            const respuesta = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+                method: "POST",
+                headers: {
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    email: email,
+                    password: password,
+                    data: { estado: "pendiente" }
+                })
+            });
+
+            const resultado = await respuesta.json();
+
+            if (resultado.error) {
+                alert("Respuesta de Supabase: " + resultado.error.message);
+            } else {
+                alert("¡Señal enviada! Registro completado.");
+                mostrarPantalla('pendiente');
+            }
+        } catch (err) {
+            alert("Error de red: Revisa que la URL de Supabase empiece con https://");
+        }
+    }
+
+    // INICIO DE SESIÓN MEDIANTE SISTEMA NATIVO DEL NAVEGADOR
+    async function iniciarSesion() {
+        const email = document.getElementById("log-email").value;
+        const password = document.getElementById("log-password").value;
+        if(!email || !password) return alert("Por favor completa los campos.");
+
+        try {
+            const respuesta = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+                method: "POST",
+                headers: {
+                    "apikey": SUPABASE_ANON_KEY,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ email: email, password: password })
+            });
+
+            const resultado = await respuesta.json();
+
+            if (resultado.error) {
+                alert("Acceso denegado: " + resultado.error.message);
+            } else if (resultado.user) {
+                evaluarSesion(resultado.user);
+            }
+        } catch (err) {
+            alert("Error al conectar con el servidor de inicio de sesión.");
+        }
+    }
+
+    function evaluarSesion(usuario) {
+        if (!usuario) return mostrarPantalla('registro');
+        const estadoUsuario = usuario.user_metadata ? usuario.user_metadata.estado : "pendiente";
+
+        if (estadoUsuario === "aprobado") {
+            mostrarPantalla('privada');
+            actualizarTexto();
+        } else {
+            mostrarPantalla('pendiente');
+        }
+    }
+
+    function cerrarSesion() {
+        mostrarPantalla('login');
+    }
+
+    // LÓGICA DEL FORMULARIO Y TEXTO MUTABLE
+    const plantillas = {
+        comercial: { titulo: "Contrato Comercial Estándar", cuerpo: "Por la presente se establece un acuerdo de servicios comerciales entre la empresa prestadora y el cliente registrado bajo el nombre de [NOMBRE], portador del documento de identidad [DNI], comprometiéndose ambas partes a cumplir las cláusulas vigentes." },
+        alquiler: { titulo: "Acuerdo de Alquiler Residencial", cuerpo: "Este documento certifica que [NOMBRE], con DNI número [DNI], declara aceptar las condiciones de habitabilidad del inmueble objeto de este contrato, comprometiéndose al pago puntual del alquiler mensual establecido." }
+    };
+
+    function actualizarTexto() {
+        const nombreUsuario = document.getElementById("nombre").value || "__________________";
+        const dniUsuario = document.getElementById("dni").value || "________";
+        const seleccion = document.getElementById("opciones").value;
+
+        let textoFinal = plantillas[seleccion].cuerpo.replace("[NOMBRE]", nombreUsuario).replace("[DNI]", dniUsuario);
+        document.getElementById("titulo-documento").innerText = plantillas[seleccion].titulo;
+        document.getElementById("cuerpo-documento").innerText = textoFinal;
+    }
+
+    function descargarPDF() {
+        window.print();
+    }
+
+    mostrarPantalla('registro');
+</script>
+
+</body>
+</html>

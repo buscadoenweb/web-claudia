@@ -1,0 +1,9 @@
+# Sitio estático: un solo index.html en la raíz
+[build]
+  publish = "."
+  command = ""
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

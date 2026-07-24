@@ -1,0 +1,19 @@
+# Variables de entorno (nunca subir claves secretas)
+.env
+.env.*
+!.env.example
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores / IDE
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs y temporales
+*.log
+.cache/
