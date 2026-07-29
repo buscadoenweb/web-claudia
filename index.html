@@ -3,18 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acceso Privado - Generador de PDF</title>
+    <title></title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background-color: #f4f7f6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; background-color: #f4f7f6; }
         .card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 20px; }
         label { font-weight: bold; display: block; margin-top: 15px; color: #444; }
-        input, select, button { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
+        input, select, button, textarea { width: 100%; padding: 12px; margin-top: 5px; box-sizing: border-box; border-radius: 4px; border: 1px solid #ccc; font-size: 16px; }
         button { background-color: #007bff; color: white; border: none; cursor: pointer; font-weight: bold; }
         button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
         .oculto { display: none; }
-        #contenedor-pdf { padding: 30px; border: 1px solid #e0e0e0; background: #fff; margin-top: 25px; line-height: 1.6; }
+        #contenedor-pdf { padding: 40px; border: 1px solid #e0e0e0; background: #fff; margin-top: 25px; line-height: 1.8; font-family: 'Times New Roman', Times, serif; font-size: 14px; min-height: 400px; position: relative; }
         .alerta-info { background-color: #d1ecf1; color: #0c5460; padding: 15px; border-radius: 4px; border: 1px solid #bee5eb; margin-top: 15px; font-weight: bold; }
+        .alerta-warning { background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 4px; border: 1px solid #ffeeba; margin-top: 15px; }
         .link-cambio { text-align: center; margin-top: 15px; font-size: 14px; color: #007bff; cursor: pointer; text-decoration: underline; }
+        
+        /* Estilos para campos editables en tiempo real */
+        .campo-editable { 
+            background-color: #fff3cd; 
+            border: 1px dashed #ffc107; 
+            border-radius: 3px; 
+            padding: 2px 6px; 
+            display: inline-block; 
+            min-width: 120px;
+            cursor: text;
+        }
+        .campo-editable:focus { 
+            outline: none; 
+            background-color: #ffeeba; 
+            border-color: #ffc107; 
+            box-shadow: 0 0 0 2px rgba(255,193,7,0.3);
+        }
+        .campo-editable.vacio::before { 
+            content: attr(data-placeholder); 
+            color: #999; 
+            font-style: italic; 
+        }
+        
+        /* Sección de firma */
+        .seccion-firma { 
+            margin-top: 50px; 
+            padding-top: 20px; 
+            border-top: 1px solid #ddd; 
+        }
+        .firma-linea { 
+            border-bottom: 1px solid #333; 
+            width: 300px; 
+            height: 40px; 
+            margin: 10px 0; 
+            display: inline-block; 
+        }
+        .firma-datos { display: flex; gap: 30px; margin-top: 10px; flex-wrap: wrap; }
+        .firma-dato { flex: 1; min-width: 200px; }
+        
+        /* Botones de acción */
+        .acciones { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        .btn-pdf { background-color: #28a745; }
+        .btn-pdf:hover { background-color: #218838; }
+        
+        /* Selector de tipo de documento */
+        #tipo-documento { font-size: 16px; }
+        
+        /* Responsive */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .card { padding: 15px; }
+            #contenedor-pdf { padding: 20px; font-size: 13px; }
+            .firma-datos { flex-direction: column; gap: 15px; }
+        }
+        
+        /* Print styles */
+        @media print {
+            body { background: white; padding: 0; margin: 0; }
+            .card { box-shadow: none; border: none; padding: 0; }
+            .oculto-print { display: none !important; }
+            #contenedor-pdf { border: none; padding: 0; margin: 0; min-height: auto; }
+            .acciones, label, select, input, button { display: none !important; }
+            .campo-editable { background: transparent !important; border: none !important; box-shadow: none !important; padding: 0 !important; min-width: auto !important; }
+        }
     </style>
 </head>
 <body>
@@ -32,7 +98,7 @@
     <label for="reg-password">Contraseña (Mínimo 6 caracteres):</label>
     <input type="password" id="reg-password" placeholder="******">
 
-    <button onclick="registrarUsuario()" style="margin-top: 20px; background-color: #28a745;">Registrarse de verdad</button>
+    <button onclick="registrarUsuario()" style="margin-top: 20px; background-color: #28a745;">Registrarse</button>
     <div class="link-cambio" onclick="mostrarPantalla('login')">¿Ya estás registrado? Inicia sesión acá</div>
 </div>
 
@@ -47,7 +113,7 @@
     <label for="log-password">Contraseña:</label>
     <input type="password" id="log-password" placeholder="******">
 
-    <button onclick="iniciarSesion()" style="margin-top: 20px;">Iniciar Sesión Diario</button>
+    <button onclick="iniciarSesion()" style="margin-top: 20px;">Iniciar Sesión</button>
     <div class="link-cambio" onclick="mostrarPantalla('registro')">¿Sos un cliente nuevo? Registrate acá</div>
 </div>
 
@@ -55,43 +121,239 @@
 <div id="pantalla-pendiente" class="card oculto">
     <h2>Cuenta en Verificación</h2>
     <div class="alerta-info" style="background-color: #fff3cd; color: #856404; border-color: #ffeeba;">
-        ⏳ Tu cuenta está siendo verificada de forma segura. Te avisaremos cuando el administrador cambie tu estado a "aprobado" en el panel.
+        ⏳ Tu cuenta está siendo verificada. Te avisaremos cuando el administrador cambie tu estado a "aprobado".
     </div>
     <button onclick="cerrarSesion()" style="background-color: #dc3545; margin-top: 20px;">Volver al Inicio</button>
 </div>
 
 <!-- PANTALLA D: FORMULARIO Y PDF -->
 <div id="pantalla-privada" class="card oculto">
-    <h2>¡Bienvenido! Configura tu Documento</h2>
-    <p><button onclick="cerrarSesion()" style="background-color: #dc3545; padding: 5px 10px; width: auto; font-size: 12px; float: right;">Cerrar Sesión</button></p>
+    <h2>Generador de Descargos</h2>
+    <p><button onclick="cerrarSesion()" style="background-color: #dc3545; padding: 5px 10px; width: auto; font-size: 12px; float: right;" class="oculto-print">Cerrar Sesión</button></p>
     <div style="clear: both;"></div>
 
-    <label for="nombre">Nombre Completo del Cliente:</label>
-    <input type="text" id="nombre" placeholder="Ej. Juan Pérez" oninput="actualizarTexto()">
+    <div class="alerta-warning oculto-print">
+        <strong>Instrucciones:</strong> Seleccioná un tipo de descargo/recurso. Los campos en <span class="campo-editable" style="background:#fff3cd;border:1px dashed #ffc107;padding:2px 6px;border-radius:3px;">amarillo con bordes punteados</span> son editables. Hacé clic sobre ellos para completarlos. Al final, firmá digitalmente y descargá el PDF.
+    </div>
 
-    <label for="dni">DNI / Identificación:</label>
-    <input type="text" id="dni" placeholder="Ej. 12345678X" oninput="actualizarTexto()">
-
-    <label for="opciones">Tipo de Documento:</label>
-    <select id="opciones" onchange="actualizarTexto()">
-        <option value="comercial">Contrato Comercial Estándar</option>
-        <option value="alquiler">Acuerdo de Alquiler Residencial</option>
+    <label for="tipo-documento" class="oculto-print">Tipo de Documento:</label>
+    <select id="tipo-documento" onchange="cambiarDocumento()" class="oculto-print">
+        <option value="">-- Seleccionar tipo de descargo/recurso --</option>
+        <option value="1">1) Descargo por Falta de Notificación Fehaciente</option>
+        <option value="2">2) Descargo por Tolerancia en el Exceso de Velocidad</option>
+        <option value="3">3) Descargo por Nulidad por Defecto de Forma</option>
+        <option value="4">4) Descargo por Prescripción Leve (Infracciones Leves)</option>
+        <option value="5">5) Descargo por Prescripción Corta / Grave (Faltas Graves)</option>
+        <option value="6">6) Nota de Apelación de Sentencia (Recurso de Apelación)</option>
+        <option value="7">7) Descargo contra la Retención de Licencia por Deudas de Multas (PBA)</option>
     </select>
 
     <div id="contenedor-pdf">
-        <h3 id="titulo-documento">Contrato Comercial Estándar</h3>
-        <p id="cuerpo-documento">Cargando...</p>
+        <div id="documento-seleccionado">
+            <p style="text-align: center; color: #666; margin-top: 100px;">Seleccioná un tipo de documento para comenzar</p>
+        </div>
     </div>
 
-    <button onclick="descargarPDF()" style="background-color: #28a745; margin-top: 20px;">Descargar PDF Personalizado</button>
+    <div class="acciones oculto-print">
+        <button onclick="descargarPDF()" class="btn-pdf" id="btn-pdf" disabled>📄 Descargar PDF</button>
+    </div>
 </div>
 
-<!-- MOTOR DE CONEXIÓN PROPIO (CERO ENLACES EXTERNOS) -->
+<script src="config.js"></script>
 <script>
-    // ⚠️ COLOCÁ TUS DATOS DE SUPABASE AQUÍ
-    const SUPABASE_URL = "https://ojcabywacdwismsyvgpl.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qY2FieXdhY2R3aXNtc3l2Z3BsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI4Mjg1MjgsImV4cCI6MjA5ODQwNDUyOH0.SWnzjmVlSu11V-DLtpnA5ajMigzVLGh0P1NF7aA0rHk";
+    const SUPABASE_URL = window.SUPABASE_CONFIG?.url;
+    const SUPABASE_ANON_KEY = window.SUPABASE_CONFIG?.anonKey;
 
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        console.error("Falta config.js. En local ejecutá: npm run build");
+    }
+
+    // ==========================================
+    // PLANTILLAS DE DOCUMENTOS
+    // ==========================================
+    const plantillas = {
+        1: {
+            titulo: "DESCARGO POR FALTA DE NOTIFICACIÓN FEHACIENTE",
+            campos: [
+                { id: "nombre", placeholder: "Nombre del Titular/Imputado", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "domicilio", placeholder: "Calle y Número", default: "" },
+                { id: "ciudad", placeholder: "Ciudad/Localidad", default: "" },
+                { id: "email", placeholder: "Correo Electrónico", default: "" },
+                { id: "acta", placeholder: "Número de Acta", default: "" },
+                { id: "conocimiento", placeholder: "Indicar cómo tomó conocimiento (consulta web, renovación de licencia, venta del vehículo, etc.)", default: "" }
+            ],
+            texto: `AL SR. JUEZ DE FALTAS. 
+
+[nombre], DNI Nº [dni], por propio derecho, con domicilio real en [domicilio], de la localidad de [ciudad], constituyendo domicilio electrónico en [email], ante Ud. me presento y respetuosamente digo:
+
+I. OBJETO: Que vengo en tiempo y forma a presentar formal descargo contra el Acta de Infracción Nº [acta], solicitando se declare la NULIDAD ABSOLUTA de la misma y de todo lo actuado, en virtud de no haber sido debidamente notificado en los plazos y formas que la ley exige, vulnerando de manera flagrante mi derecho de defensa en juicio (Art. 18 de la Constitución Nacional).
+
+II. HECHOS Y FUNDAMENTOS: He tomado conocimiento de la supuesta infracción de mención de manera indirecta, al momento de [conocimiento], no habiendo recibido jamás en mi domicilio real ninguna cédula, notificación ni copia del acta de infracción correspondiente.
+
+El artículo 22 de la Ley Provincial N° 13.927 y el ordenamiento nacional exigen que la notificación del presunto acto infraccional sea fehaciente, garantizando que el presunto infractor tenga conocimiento efectivo para ejercer su derecho de defensa y el beneficio del pago voluntario.
+
+La ausencia de una notificación postal válida (con constancia de recepción en el domicilio del titular) vicia el procedimiento de nulidad insanable. La administración no puede suplir la falta de entrega de la correspondencia formal con una simple carga en un sistema informático.
+
+III. PETITORIO:
+1. Se me tenga por presentado en tiempo y forma, y por constituido el domicilio.
+2. Se declare la NULIDAD del Acta de Infracción Nº [acta] por falta de notificación fehaciente, ordenándose el archivo de las actuaciones de manera definitiva.`
+        },
+        2: {
+            titulo: "DESCARGO POR TOLERANCIA EN EL EXCESO DE VELOCIDAD",
+            campos: [
+                { id: "nombre", placeholder: "Nombre del Titular/Imputado", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "acta", placeholder: "Número de Acta", default: "" },
+                { id: "velocidad_registrada", placeholder: "Velocidad Registrada (km/h)", default: "" },
+                { id: "velocidad_maxima", placeholder: "Velocidad Máxima Permitida (km/h)", default: "" }
+            ],
+            texto: `AL SR. JUEZ DE FALTAS. 
+
+[nombre], DNI Nº [dni], ante Ud. me presento y digo:
+
+I. OBJETO: Que vengo a impugnar el Acta de Infracción Nº [acta], donde se me imputa un supuesto exceso de velocidad, solicitando mi absolución en virtud de encontrarse la medición dentro de los márgenes de tolerancia técnica y legalmente admitidos.
+
+II. FUNDAMENTOS: Según consta en el acta, el radar registró una velocidad de [velocidad_registrada] km/h en una zona donde la máxima permitida es de [velocidad_maxima] km/h.
+
+Al respecto, la Ley Nacional de Tránsito Nº 24.449 y las normativas de metrología legal vigentes establecen de manera expresa que los cinemómetros presentan un margen de error técnico admisible del 10% o de hasta 7 km/h en velocidades bajas.
+
+Aplicando dicho principio de tolerancia a favor del administrado (in dubio pro reo), se comprueba que el exceso imputado es ínfimo o inexistente una vez deducido el error del instrumento de medición. Por lo tanto, la conducta descrita no constituye una falta punible por falta de certeza absoluta en la medición.
+
+III. PETITORIO:
+1. Se tenga por presentado el descargo.
+2. Aplicando la tolerancia legal del instrumento de medición, se deje sin efecto la sanción y se archive el acta.`        },
+        3: {
+            titulo: "DESCARGO POR NULIDAD POR DEFECTO DE FORMA",
+            campos: [
+                { id: "nombre", placeholder: "Nombre del Titular/Imputado", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "acta", placeholder: "Número de Acta", default: "" },
+                { id: "defecto", placeholder: "Seleccionar el error: ej. Falta de matrícula de calibración del radar / Falta de firma de la autoridad / Indeterminación del lugar / Fecha de homologación vencida", default: "" }
+            ],
+            texto: `AL SR. JUEZ DE FALTAS. 
+
+[nombre], DNI Nº [dni], ante Ud. me presento y digo:
+
+I. OBJETO: Que vengo a interponer formal descargo contra el Acta de Infracción Nº [acta], solicitando su invalidez legal y nulidad absoluta por adolecer de defectos de forma graves que impiden que surta efectos jurídicos válidos.
+
+II. FUNDAMENTOS: El artículo 69 de la Ley Nº 24.449 (y sus correlativos provinciales) determina de manera taxativa los requisitos esenciales que debe contener toda acta de comprobación para ser considerada un instrumento público válido.
+
+En el presente caso, el acta cuestionada carece de/presenta error en: [defecto].
+
+La omisión de estos requisitos esenciales no constituye una mera formalidad, sino un vicio que afecta la validez del acto administrativo, transformándolo en un acto nulo de nulidad absoluta e insanable.
+
+III. PETITORIO:
+1. Se admita el descargo.
+2. Se dicte la NULIDAD del acta atacada por los defectos de forma expuestos y se proceda al archivo.`        },
+        4: {
+            titulo: "DESCARGO POR PRESCRIPCIÓN LEVE (INFRACCIONES LEVES)",
+            campos: [
+                { id: "nombre", placeholder: "Nombre del Titular/Imputado", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "acta", placeholder: "Número de Acta", default: "" },
+                { id: "fecha_hecho", placeholder: "Fecha del Hecho (dd/mm/aaaa)", default: "" }
+            ],
+            texto: `AL SR. JUEZ DE FALTAS. 
+
+[nombre], DNI Nº [dni], ante Ud. me presento y digo:
+
+I. OBJETO: Que vengo a presentar descargo y a plantear de previo y especial pronunciamiento la PRESCRIPCIÓN de la acción contravencional respecto del Acta de Infracción Nº [acta].
+
+II. FUNDAMENTOS: La supuesta infracción que se me imputa —tipificada como falta leve— habría ocurrido con fecha [fecha_hecho].
+
+El artículo 89 de la Ley Nacional de Tránsito Nº 24.449 (y normativa provincial concordante) establece que la acción por infracciones prescribe a los dos (2) años para faltas leves.
+
+Habiendo transcurrido en exceso dicho plazo desde la fecha de la supuesta comisión del hecho sin que se hayan verificado causales válidas de interrupción o suspensión del curso de la prescripción (tales como la citación para juicio o la comisión de una nueva falta grave), la facultad sancionatoria del Estado se encuentra plenamente extinguida.
+
+III. PETITORIO:
+1. Se tenga por opuesta la excepción de prescripción.
+2. Se declare la extinción de la acción por prescripción y se ordene el archivo definitivo del legajo.`        },
+        5: {
+            titulo: "DESCARGO POR PRESCRIPCIÓN CORTA / GRAVE (FALTAS GRAVES)",
+            campos: [
+                { id: "nombre", placeholder: "Nombre del Titular/Imputado", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "acta", placeholder: "Número de Acta", default: "" },
+                { id: "fecha_hecho", placeholder: "Fecha del Hecho (dd/mm/aaaa)", default: "" }
+            ],
+            texto: `AL SR. JUEZ DE FALTAS. 
+
+[nombre], DNI Nº [dni], ante Ud. me presento y digo:
+
+I. OBJETO: Que vengo a solicitar se declare la PRESCRIPCIÓN de la pretensión punitiva respecto de la supuesta falta grave imputada en el Acta de Infracción Nº [acta].
+
+II. FUNDAMENTOS: Se observa en las actuaciones que el hecho imputado data del día [fecha_hecho].
+
+La legislación de tránsito vigente prescribe de forma expresa que el plazo para la persecución de las faltas graves es de cinco (5) años.
+
+Toda vez que desde la fecha señalada hasta la actualidad ha operado holgadamente el plazo de cinco años establecido por el artículo 89 inc. b) de la Ley N° 24.449, sin mediar actos procesales con entidad interruptiva según la normativa aplicable, solicito se declare la caducidad y archivo de las presentes actuaciones por el paso del tiempo.
+
+III. PETITORIO:
+1. Se recepcione la defensa planteada.
+2. Se dicte la resolución que declare la prescripción de la falta y se deba dar de baja cualquier restricción que de ella derive.`        },
+        6: {
+            titulo: "NOTA DE APELACIÓN DE SENTENCIA (RECURSO DE APELACIÓN)",
+            campos: [
+                { id: "jurisdiccion", placeholder: "Localidad/Jurisdicción del Juzgado", default: "" },
+                { id: "nombre", placeholder: "Nombre del Imputado/Condenado", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "causa", placeholder: "Número de Causa/Expediente", default: "" },
+                { id: "fecha_sentencia", placeholder: "Fecha de la Sentencia (dd/mm/aaaa)", default: "" },
+                { id: "motivo_especifico", placeholder: "Motivo específico (velocidad, falta de notificación, etc.)", default: "" }
+            ],
+            texto: `AL SR. JUEZ DEL JUZGADO DE FALTAS DE [jurisdiccion]
+
+[nombre], DNI Nº [dni], con patrocinio letrado / por propio derecho, en la Causa Nº [causa], ante Ud. me presento y respetuosamente digo:
+
+I. OBJETO: Que en tiempo y forma (dentro del plazo legal establecido por el Art. 38 de la Ley N° 13.927 / Código de Faltas aplicable), vengo a interponer formal RECURSO DE APELACIÓN contra la Sentencia de Condena de fecha [fecha_sentencia], que resuelve aplicarme una sanción de multa/inhabilitación por considerarla arbitraria, carente de sustento fáctico y violatoria de las garantías constitucionales. Solicito se conceda el recurso y se eleven las actuaciones al Juzgado en lo Correccional en turno.
+
+II. AGRAVIOS (RESUMEN): La sentencia apelada me causa un gravamen irreparable por los siguientes motivos:
+1. Falta de valoración de las pruebas/descargo: El juzgador omitió analizar los argumentos defensistas introducidos oportunamente en el descargo inicial, dictando una resolución puramente automática y genérica.
+2. Arbitrariedad manifiesta: Se fundamenta en un acta de comprobación nula, otorgándole valor probatorio absoluto a un elemento tecnológico que fue impugnado, invirtiendo ilegalmente la carga de la prueba. [motivo_especifico]
+
+III. RESERVA DE CASO FEDERAL: Para el caso de que se mantenga el criterio arbitrario de la sentencia, hago expresa reserva del Caso Federal en los términos del Art. 14 de la Ley N° 48, por verse vulnerado el derecho de propiedad y debido proceso.
+
+IV. PETITORIO:
+1. Se tenga por interpuesto en término el Recurso de Apelación.
+2. Se suspendan los efectos de la sentencia impugnada (efecto suspensivo).
+3. Se eleven las actuaciones correspondientes al superior jerárquico judicial (Juez en lo Correccional) para que revoque el fallo.`        },
+        7: {
+            titulo: "DESCARGO CONTRA LA RETENCIÓN DE LICENCIA POR DEUDAS DE MULTAS (PBA)",
+            campos: [
+                { id: "municipio", placeholder: "Municipio/Juzgado de Faltas", default: "" },
+                { id: "nombre", placeholder: "Nombre del Solicitante", default: "" },
+                { id: "dni", placeholder: "Número de DNI", default: "" },
+                { id: "domicilio", placeholder: "Domicilio", default: "" }
+            ],
+            texto: `AL SR. DIRECTOR DE TRÁNSITO / JUEZ DE FALTAS DE [municipio]
+
+[nombre], DNI Nº [dni], con domicilio en [domicilio], ante Ud. me presento y respetuosamente digo:
+
+I. OBJETO: Que vengo por medio del presente a exigir la inmediata liberación, continuidad y otorgamiento de mi Licencia Nacional de Conducir, cuyo trámite se encuentra ilegítimamente retenido, paralizado o bloqueado bajo el pretexto de registrar supuestas deudas por infracciones de tránsito pendientes.
+
+II. FUNDAMENTOS DE DERECHO Y JURISPRUDENCIA OBLIGATORIA: El impedimento de renovar o emitir la licencia de conducir basándose exclusivamente en la existencia de deudas de multas pendientes de pago constituye una aduana interior y una sanción extorsiva, declarada inconstitucional por la jurisprudencia pacífica de nuestro país.
+
+Al respecto, la Suprema Corte de Justicia de la Provincia de Buenos Aires (SCBA) ha fijado doctrina categórica (en fallos como "De Dios, Horacio Salvador c/ Municipalidad de San Isidro" y "C., M. E. c/ Provincia de Buenos Aires"), determinando que la exigencia del certificado de "libre deuda" de infracciones como requisito restrictivo y automático para la obtención/renovación de la licencia de conducir resulta irrazonable e ilegítima.
+
+El máximo tribunal provincial ha manifestado que el Estado cuenta con las vías ejecutivas pertinentes (juicio de apremio) para perseguir el cobro de las multas pecuniarias. Por ende, utilizar la retención o el bloqueo de un documento esencial para la circulación y, en muchos casos, para el trabajo, desnaturaliza la finalidad de la seguridad vial y se convierte en un mecanismo meramente recaudatorio que viola el derecho a trabajar y circular libremente (Art. 14 de la Constitución Nacional).
+
+Bloquear mi trámite sin una sentencia firme dictada con debido proceso, o utilizándolo como mecanismo de coacción para el cobro, configura una flagrante desviación de poder.
+
+III. INTIMACIÓN: Solicito se proceda a dar curso inmediato a la emisión y entrega de mi Licencia de Conducir de manera urgente. Caso contrario, quedará expedita la vía del Acción de Amparo judicial por arbitrariedad manifiesta, con más la denuncia penal por incumplimiento de los deberes de funcionario público.
+
+IV. PETITORIO:
+1. Se tenga por presentado el reclamo y por invocada la doctrina obligatoria de la SCBA.
+2. Se ordene levantar cualquier traba, bloqueo o retención del trámite de mi licencia, permitiendo su normal expedición.`        }
+    };
+
+    // Estado actual
+    let documentoActual = null;
+    let valoresCampos = {};
+
+    // ==========================================
+    // FUNCIONES DE AUTENTICACIÓN (existentes)
+    // ==========================================
     function mostrarPantalla(fase) {
         document.getElementById("pantalla-registro").classList.add("oculto");
         document.getElementById("pantalla-login").classList.add("oculto");
@@ -104,7 +366,6 @@
         if (fase === 'privada') document.getElementById("pantalla-privada").classList.remove("oculto");
     }
 
-    // REGISTRO MEDIANTE SISTEMA NATIVO DEL NAVEGADOR
     async function registrarUsuario() {
         const email = document.getElementById("reg-email").value;
         const password = document.getElementById("reg-password").value;
@@ -129,7 +390,7 @@
             if (resultado.error) {
                 alert("Respuesta de Supabase: " + resultado.error.message);
             } else {
-                alert("¡Señal enviada! Registro completado.");
+                alert("¡Registro completado! Espera la aprobación del administrador.");
                 mostrarPantalla('pendiente');
             }
         } catch (err) {
@@ -137,7 +398,6 @@
         }
     }
 
-    // INICIO DE SESIÓN MEDIANTE SISTEMA NATIVO DEL NAVEGADOR
     async function iniciarSesion() {
         const email = document.getElementById("log-email").value;
         const password = document.getElementById("log-password").value;
@@ -171,7 +431,6 @@
 
         if (estadoUsuario === "aprobado") {
             mostrarPantalla('privada');
-            actualizarTexto();
         } else {
             mostrarPantalla('pendiente');
         }
@@ -181,28 +440,100 @@
         mostrarPantalla('login');
     }
 
-    // LÓGICA DEL FORMULARIO Y TEXTO MUTABLE
-    const plantillas = {
-        comercial: { titulo: "Contrato Comercial Estándar", cuerpo: "Por la presente se establece un acuerdo de servicios comerciales entre la empresa prestadora y el cliente registrado bajo el nombre de [NOMBRE], portador del documento de identidad [DNI], comprometiéndose ambas partes a cumplir las cláusulas vigentes." },
-        alquiler: { titulo: "Acuerdo de Alquiler Residencial", cuerpo: "Este documento certifica que [NOMBRE], con DNI número [DNI], declara aceptar las condiciones de habitabilidad del inmueble objeto de este contrato, comprometiéndose al pago puntual del alquiler mensual establecido." }
-    };
+    // ==========================================
+    // FUNCIONES DE DOCUMENTOS (NUEVAS)
+    // ==========================================
+    function cambiarDocumento() {
+        const select = document.getElementById("tipo-documento");
+        const valor = select.value;
+        
+        if (!valor) {
+            document.getElementById("documento-seleccionado").innerHTML = 
+                '<p style="text-align: center; color: #666; margin-top: 100px;">Seleccioná un tipo de documento para comenzar</p>';
+            document.getElementById("btn-pdf").disabled = true;
+            document.getElementById("btn-copiar").disabled = true;
+            documentoActual = null;
+            return;
+        }
 
-    function actualizarTexto() {
-        const nombreUsuario = document.getElementById("nombre").value || "__________________";
-        const dniUsuario = document.getElementById("dni").value || "________";
-        const seleccion = document.getElementById("opciones").value;
+        documentoActual = valor;
+        valoresCampos = {};
+        
+        // Inicializar valores por defecto
+        plantillas[valor].campos.forEach(campo => {
+            valoresCampos[campo.id] = campo.default || "";
+        });
 
-        let textoFinal = plantillas[seleccion].cuerpo.replace("[NOMBRE]", nombreUsuario).replace("[DNI]", dniUsuario);
-        document.getElementById("titulo-documento").innerText = plantillas[seleccion].titulo;
-        document.getElementById("cuerpo-documento").innerText = textoFinal;
+        renderizarDocumento();
+        document.getElementById("btn-pdf").disabled = false;
+        document.getElementById("btn-copiar").disabled = false;
+    }
+
+    function renderizarDocumento() {
+        if (!documentoActual) return;
+
+        const plantilla = plantillas[documentoActual];
+        let html = `<h3 style="text-align: center; margin-bottom: 30px; text-transform: uppercase; letter-spacing: 1px;">${plantilla.titulo}</h3>`;
+        
+        // Procesar el texto reemplazando [campo] por spans editables
+        let texto = plantilla.texto;
+        
+        // Reemplazar cada [campo] por un span editable
+        plantilla.campos.forEach(campo => {
+            const valor = valoresCampos[campo.id] || "";
+            const placeholder = campo.placeholder;
+            const regex = new RegExp(`\\[${campo.id}\\]`, 'g');
+            const spanEditable = `<span class="campo-editable" contenteditable="true" data-campo="${campo.id}" data-placeholder="${placeholder}" oninput="actualizarCampo(this)">${valor || ''}</span>`;
+            texto = texto.replace(regex, spanEditable);
+        });
+
+        // Agregar sección de firma (sin aclaración ni fecha automática)
+        const seccionFirma = `
+            <div class="seccion-firma">
+                <p style="margin-top: 40px; text-align: center;"><strong>FIRMA DIGITAL</strong></p>
+                <div style="text-align: center; margin: 20px 0;">
+                    <div class="firma-linea" contenteditable="true" data-campo="firma" data-placeholder="Firma digital" oninput="actualizarCampo(this)"></div>
+                </div>
+                <div class="firma-datos">
+                    <div class="firma-dato">
+                        <label style="font-size: 12px; color: #666;">DNI</label>
+                        <div class="campo-editable" contenteditable="true" data-campo="dni_firma" data-placeholder="DNI" oninput="actualizarCampo(this)">${valoresCampos.dni_firma || ''}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        html += texto + seccionFirma;
+        document.getElementById("documento-seleccionado").innerHTML = html;
+    }
+
+    function actualizarCampo(elemento) {
+        const campo = elemento.dataset.campo;
+        const valor = elemento.innerText.trim();
+        valoresCampos[campo] = valor;
+        
+        // Si el campo está vacío, mostrar placeholder visual
+        if (!valor) {
+            elemento.classList.add('vacio');
+        } else {
+            elemento.classList.remove('vacio');
+        }
     }
 
     function descargarPDF() {
+        if (!documentoActual) return alert("Seleccioná un documento primero");
+        
+        // Guardar valores actuales antes de imprimir
+        document.querySelectorAll('.campo-editable').forEach(el => {
+            const campo = el.dataset.campo;
+            valoresCampos[campo] = el.innerText.trim();
+        });
+        
         window.print();
     }
 
+    // Inicializar
     mostrarPantalla('registro');
 </script>
-
 </body>
 </html>
