@@ -1,0 +1,39 @@
+# ==========================================
+# REGLAS DE PROTECCIÓN GLOBAL PARA CLINE
+# ==========================================
+
+# Claves de acceso y credenciales del sistema
+**/.ssh/**
+**/.aws/**
+**/.kube/**
+**/.gnupg/**
+**/config/gcloud/**
+
+# Archivos de configuración de variables de entorno locales
+**/.env
+**/.env.local
+**/.env.development
+**/.env.production
+**/.env.vars
+
+# Datos del navegador (cookies, contraseñas guardadas, historial)
+**/AppData/Local/Google/Chrome/**
+**/Library/Application Support/Google/Chrome/**
+**/.config/google-chrome/**
+**/.mozilla/**
+
+# Archivos del sistema y configuraciones de VS Code
+**/.vscode/*.json
+**/AppData/Roaming/Code/**
+**/Library/Application Support/Code/**
+**/.config/Code/**
+
+# Carpetas personales críticas (Copia de seguridad)
+**/Documents/**
+**/Downloads/**
+**/Desktop/**
+**/Pictures/**
+
+# Repositorios y configuraciones de Git globales
+**/.gitconfig
+**/.git-credentials

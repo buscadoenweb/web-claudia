@@ -1,7 +1,7 @@
 # Sitio estático: un solo index.html en la raíz
 [build]
   publish = "."
-  command = ""
+  command = "npm run build"
 
 [[redirects]]
   from = "/*"

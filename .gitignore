@@ -3,6 +3,9 @@
 .env.*
 !.env.example
 
+# Config generada con credenciales (scripts/build-config.js)
+config.js
+
 # Sistema operativo
 .DS_Store
 Thumbs.db

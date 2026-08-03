@@ -1,0 +1,8 @@
+{
+  "name": "web-claudia",
+  "private": true,
+  "description": "Generador de PDF con acceso privado vía Supabase Auth",
+  "scripts": {
+    "build": "node scripts/build-config.js"
+  }
+}
