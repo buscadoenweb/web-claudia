@@ -1,0 +1,13 @@
+# Web Claudia - actualización de seguridad v1
+
+Esta versión cambia la comprobación de aprobación de `user_metadata.estado` a `app_metadata.estado`.
+
+## Antes de publicar
+1. En Supabase > SQL Editor, ejecutá `MIGRACION_ESTADO_APROBACION.sql` una sola vez para conservar los estados de usuarios existentes.
+2. Después subí este proyecto a GitHub y dejá que Vercel haga el deploy.
+
+## Importante
+- No se incluye ninguna `service_role` ni secret key.
+- La `anonKey` pública sigue siendo normal para un frontend Supabase.
+- Los usuarios nuevos quedan en estado `pendiente` porque el registro ya no permite que el cliente escriba su propio estado.
+- La aprobación administrativa segura se implementará en el siguiente paso mediante una operación del lado servidor.

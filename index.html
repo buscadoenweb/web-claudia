@@ -380,19 +380,19 @@ IV. PETITORIO:
                 },
                 body: JSON.stringify({
                     email: email,
-                    password: password,
-                    data: { estado: "pendiente" }
+                    password: password
                 })
             });
 
             const resultado = await respuesta.json();
 
-            if (resultado.error) {
-                alert("Respuesta de Supabase: " + resultado.error.message);
-            } else {
-                alert("¡Registro completado! Espera la aprobación del administrador.");
-                mostrarPantalla('pendiente');
+            if (!respuesta.ok) {
+                alert("Respuesta de Supabase: " + (resultado.msg || resultado.error_description || resultado.error?.message || resultado.error || "Error desconocido"));
+                return;
             }
+
+            alert("¡Registro completado! Espera la aprobación del administrador.");
+            mostrarPantalla('pendiente');
         } catch (err) {
             alert("Error de red: Revisa que la URL de Supabase empiece con https://");
         }
@@ -427,7 +427,7 @@ IV. PETITORIO:
 
     function evaluarSesion(usuario) {
         if (!usuario) return mostrarPantalla('registro');
-        const estadoUsuario = usuario.user_metadata ? usuario.user_metadata.estado : "pendiente";
+        const estadoUsuario = usuario.app_metadata?.estado || "pendiente";
 
         if (estadoUsuario === "aprobado") {
             mostrarPantalla('privada');
